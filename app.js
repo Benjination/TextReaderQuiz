@@ -2848,12 +2848,21 @@ function displayAnalysisResultsWithSearch(analysis, keywords) {
                     <div id="searchMatchSummary">
                         ${generateSearchMatchSummary(analysis.originalContent, keywords)}
                     </div>
+                    <div style="margin-top: 15px;">
+                        <button onclick="jumpToNextOccurrence()" class="btn" style="background-color: #17a2b8; font-size: 14px; padding: 8px 16px;">
+                            ⬇️ Next Match
+                        </button>
+                        <button onclick="jumpToPreviousOccurrence()" class="btn" style="background-color: #6c757d; font-size: 14px; padding: 8px 16px; margin-left: 8px;">
+                            ⬆️ Previous Match
+                        </button>
+                        <span id="matchCounter" style="margin-left: 15px; color: #6c757d; font-size: 14px;"></span>
+                    </div>
                 </div>
             </div>
             
             <div style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
                 <h4 style="color: #007bff; margin-top: 0;">📝 Full Text (with highlighting)</h4>
-                <div style="background: white; padding: 20px; border-radius: 8px; max-height: 500px; overflow-y: auto; border: 1px solid #dee2e6; font-family: 'Georgia', serif; line-height: 1.6;">
+                <div id="fullTextContainer" style="background: white; padding: 20px; border-radius: 8px; max-height: 500px; overflow-y: auto; border: 1px solid #dee2e6; font-family: 'Georgia', serif; line-height: 1.6;">
                     ${highlightedContent}
                 </div>
             </div>
@@ -2862,8 +2871,138 @@ function displayAnalysisResultsWithSearch(analysis, keywords) {
     
     document.body.appendChild(document.createElement('div')).innerHTML = analysisHTML;
     
+    // Initialize search navigation
+    initializeSearchNavigation();
+    
     // Scroll to the results
     document.getElementById('analysisResults').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    
+    // Auto-jump to first occurrence after a brief delay
+    setTimeout(() => {
+        jumpToNextOccurrence();
+    }, 500);
+}
+
+// =====================================
+// SEARCH NAVIGATION FUNCTIONALITY
+// =====================================
+
+let currentMatchIndex = -1;
+let allMatches = [];
+
+/**
+ * Initialize search navigation by finding all highlighted elements
+ */
+function initializeSearchNavigation() {
+    // Find all highlighted spans in the text
+    const container = document.getElementById('fullTextContainer');
+    if (!container) return;
+    
+    allMatches = Array.from(container.querySelectorAll('.search-highlight'));
+    currentMatchIndex = -1;
+    
+    // Add unique IDs to each match for easy navigation
+    allMatches.forEach((match, index) => {
+        match.id = `match-${index}`;
+        match.style.position = 'relative';
+    });
+    
+    updateMatchCounter();
+}
+
+/**
+ * Jump to the next search occurrence
+ */
+function jumpToNextOccurrence() {
+    if (allMatches.length === 0) return;
+    
+    // Remove previous highlight
+    if (currentMatchIndex >= 0 && allMatches[currentMatchIndex]) {
+        allMatches[currentMatchIndex].style.backgroundColor = '#ffeb3b';
+        allMatches[currentMatchIndex].style.boxShadow = 'none';
+    }
+    
+    // Move to next match (cycle to beginning if at end)
+    currentMatchIndex = (currentMatchIndex + 1) % allMatches.length;
+    
+    // Highlight current match
+    const currentMatch = allMatches[currentMatchIndex];
+    if (currentMatch) {
+        currentMatch.style.backgroundColor = '#ff9800';
+        currentMatch.style.boxShadow = '0 0 10px rgba(255, 152, 0, 0.5)';
+        currentMatch.style.fontWeight = 'bold';
+        
+        // Scroll to the match within the container
+        const container = document.getElementById('fullTextContainer');
+        if (container) {
+            const matchRect = currentMatch.getBoundingClientRect();
+            const containerRect = container.getBoundingClientRect();
+            
+            // Calculate the scroll position to center the match in the container
+            const scrollTop = container.scrollTop + (matchRect.top - containerRect.top) - (container.clientHeight / 2);
+            
+            container.scrollTo({
+                top: scrollTop,
+                behavior: 'smooth'
+            });
+        }
+    }
+    
+    updateMatchCounter();
+}
+
+/**
+ * Jump to the previous search occurrence
+ */
+function jumpToPreviousOccurrence() {
+    if (allMatches.length === 0) return;
+    
+    // Remove previous highlight
+    if (currentMatchIndex >= 0 && allMatches[currentMatchIndex]) {
+        allMatches[currentMatchIndex].style.backgroundColor = '#ffeb3b';
+        allMatches[currentMatchIndex].style.boxShadow = 'none';
+    }
+    
+    // Move to previous match (cycle to end if at beginning)
+    currentMatchIndex = currentMatchIndex <= 0 ? allMatches.length - 1 : currentMatchIndex - 1;
+    
+    // Highlight current match
+    const currentMatch = allMatches[currentMatchIndex];
+    if (currentMatch) {
+        currentMatch.style.backgroundColor = '#ff9800';
+        currentMatch.style.boxShadow = '0 0 10px rgba(255, 152, 0, 0.5)';
+        currentMatch.style.fontWeight = 'bold';
+        
+        // Scroll to the match within the container
+        const container = document.getElementById('fullTextContainer');
+        if (container) {
+            const matchRect = currentMatch.getBoundingClientRect();
+            const containerRect = container.getBoundingClientRect();
+            
+            // Calculate the scroll position to center the match in the container
+            const scrollTop = container.scrollTop + (matchRect.top - containerRect.top) - (container.clientHeight / 2);
+            
+            container.scrollTo({
+                top: scrollTop,
+                behavior: 'smooth'
+            });
+        }
+    }
+    
+    updateMatchCounter();
+}
+
+/**
+ * Update the match counter display
+ */
+function updateMatchCounter() {
+    const counterElement = document.getElementById('matchCounter');
+    if (counterElement && allMatches.length > 0) {
+        const displayIndex = currentMatchIndex >= 0 ? currentMatchIndex + 1 : 0;
+        counterElement.textContent = `Match ${displayIndex} of ${allMatches.length}`;
+    } else if (counterElement) {
+        counterElement.textContent = 'No matches found';
+    }
 }
 
 /**
@@ -2974,6 +3113,8 @@ window.searchFiles = searchFiles;
 window.clearSearch = clearSearch;
 window.handleSearchKeyPress = handleSearchKeyPress;
 window.openFileFromSearch = openFileFromSearch;
+window.jumpToNextOccurrence = jumpToNextOccurrence;
+window.jumpToPreviousOccurrence = jumpToPreviousOccurrence;
 
 console.log('Global functions assigned:', {
     uploadText: typeof window.uploadText,
@@ -2986,7 +3127,9 @@ console.log('Global functions assigned:', {
     searchFiles: typeof window.searchFiles,
     clearSearch: typeof window.clearSearch,
     handleSearchKeyPress: typeof window.handleSearchKeyPress,
-    openFileFromSearch: typeof window.openFileFromSearch
+    openFileFromSearch: typeof window.openFileFromSearch,
+    jumpToNextOccurrence: typeof window.jumpToNextOccurrence,
+    jumpToPreviousOccurrence: typeof window.jumpToPreviousOccurrence
 });
 
 console.log('TextReader app.js fully loaded and ready!');
