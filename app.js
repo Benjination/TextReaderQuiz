@@ -3098,6 +3098,158 @@ function generateSearchMatchSummary(content, keywords) {
 }
 
 // =====================================
+// INTERACTIVE TEXT ANALYSIS (Question 10)
+// =====================================
+
+/**
+ * Real-time text analysis as user types
+ */
+function analyzeTextReal() {
+    const stringS = document.getElementById('stringS').value;
+    const textT = document.getElementById('textAreaT').value;
+    
+    // Update basic statistics
+    updateTextStatistics(textT, stringS);
+    
+    // Update character analysis if we have both inputs
+    if (stringS && textT) {
+        updateCharacterAnalysis(textT, stringS);
+    } else {
+        // Clear analysis if inputs are empty
+        clearAnalysisDisplay();
+    }
+}
+
+/**
+ * Update basic text statistics
+ */
+function updateTextStatistics(text, stringS) {
+    const totalChars = text.length;
+    const totalWords = text.trim() ? text.trim().split(/\s+/).length : 0;
+    
+    // Count how many characters from S are found in text
+    let sCharsFound = 0;
+    if (stringS) {
+        for (let char of stringS) {
+            const regex = new RegExp(char.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+            const matches = text.match(regex) || [];
+            sCharsFound += matches.length;
+        }
+    }
+    
+    // Update display
+    document.getElementById('totalChars').textContent = totalChars.toLocaleString();
+    document.getElementById('totalWords').textContent = totalWords.toLocaleString();
+    document.getElementById('sCharsFound').textContent = sCharsFound.toLocaleString();
+}
+
+/**
+ * Update character count and frequency analysis
+ */
+function updateCharacterAnalysis(text, stringS) {
+    const characterCounts = {};
+    const totalChars = text.length;
+    
+    // Count occurrences of each character from stringS
+    for (let char of stringS) {
+        const regex = new RegExp(char.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+        const matches = text.match(regex) || [];
+        characterCounts[char] = matches.length;
+    }
+    
+    // Update character counts display
+    const countsHtml = Object.entries(characterCounts)
+        .map(([char, count]) => {
+            const displayChar = char === ' ' ? '(space)' : char;
+            return `<p><strong>'${displayChar}':</strong> ${count} occurrence${count !== 1 ? 's' : ''}</p>`;
+        })
+        .join('');
+    
+    document.getElementById('characterCounts').innerHTML = countsHtml || '<p style="color: #6c757d; font-style: italic;">No characters to analyze...</p>';
+    
+    // Update character frequencies display
+    const frequenciesHtml = Object.entries(characterCounts)
+        .map(([char, count]) => {
+            const frequency = totalChars > 0 ? ((count / totalChars) * 100).toFixed(2) : 0;
+            const displayChar = char === ' ' ? '(space)' : char;
+            return `<p><strong>'${displayChar}':</strong> ${frequency}% <span style="color: #6c757d;">(${count}/${totalChars})</span></p>`;
+        })
+        .join('');
+    
+    document.getElementById('characterFrequencies').innerHTML = frequenciesHtml || '<p style="color: #6c757d; font-style: italic;">No frequencies to calculate...</p>';
+}
+
+/**
+ * Clear analysis display when inputs are empty
+ */
+function clearAnalysisDisplay() {
+    document.getElementById('characterCounts').innerHTML = '<p style="color: #6c757d; font-style: italic;">Enter text to see character counts...</p>';
+    document.getElementById('characterFrequencies').innerHTML = '<p style="color: #6c757d; font-style: italic;">Enter text to see character frequencies...</p>';
+}
+
+/**
+ * Perform character replacement operation
+ */
+function performCharacterReplacement() {
+    const stringS = document.getElementById('stringS').value;
+    const textT = document.getElementById('textAreaT').value;
+    const replacementC = document.getElementById('replacementC').value;
+    
+    if (!stringS) {
+        alert('Please enter characters in String S to replace');
+        return;
+    }
+    
+    if (!textT) {
+        alert('Please enter some text in Text Area T');
+        return;
+    }
+    
+    if (!replacementC) {
+        alert('Please enter a replacement character C');
+        return;
+    }
+    
+    // Perform replacement
+    let replacedText = textT;
+    for (let char of stringS) {
+        const regex = new RegExp(char.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+        replacedText = replacedText.replace(regex, replacementC);
+    }
+    
+    // Show replacement preview
+    showReplacementPreview(textT, replacedText);
+}
+
+/**
+ * Show before/after replacement preview
+ */
+function showReplacementPreview(original, replaced) {
+    document.getElementById('originalText').textContent = original;
+    document.getElementById('replacedText').textContent = replaced;
+    document.getElementById('replacementPreview').style.display = 'block';
+    
+    // Scroll to the preview
+    document.getElementById('replacementPreview').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/**
+ * Clear all interactive analysis inputs and results
+ */
+function clearInteractiveAnalysis() {
+    document.getElementById('stringS').value = '';
+    document.getElementById('textAreaT').value = '';
+    document.getElementById('replacementC').value = '';
+    document.getElementById('replacementPreview').style.display = 'none';
+    
+    // Reset displays
+    document.getElementById('totalChars').textContent = '0';
+    document.getElementById('totalWords').textContent = '0';
+    document.getElementById('sCharsFound').textContent = '0';
+    clearAnalysisDisplay();
+}
+
+// =====================================
 // GLOBAL FUNCTION ASSIGNMENTS
 // =====================================
 
@@ -3115,6 +3267,9 @@ window.handleSearchKeyPress = handleSearchKeyPress;
 window.openFileFromSearch = openFileFromSearch;
 window.jumpToNextOccurrence = jumpToNextOccurrence;
 window.jumpToPreviousOccurrence = jumpToPreviousOccurrence;
+window.analyzeTextReal = analyzeTextReal;
+window.performCharacterReplacement = performCharacterReplacement;
+window.clearInteractiveAnalysis = clearInteractiveAnalysis;
 
 console.log('Global functions assigned:', {
     uploadText: typeof window.uploadText,
@@ -3129,7 +3284,10 @@ console.log('Global functions assigned:', {
     handleSearchKeyPress: typeof window.handleSearchKeyPress,
     openFileFromSearch: typeof window.openFileFromSearch,
     jumpToNextOccurrence: typeof window.jumpToNextOccurrence,
-    jumpToPreviousOccurrence: typeof window.jumpToPreviousOccurrence
+    jumpToPreviousOccurrence: typeof window.jumpToPreviousOccurrence,
+    analyzeTextReal: typeof window.analyzeTextReal,
+    performCharacterReplacement: typeof window.performCharacterReplacement,
+    clearInteractiveAnalysis: typeof window.clearInteractiveAnalysis
 });
 
 console.log('TextReader app.js fully loaded and ready!');

@@ -1,0 +1,152 @@
+TEXT READER QUIZ - PROJECT REQUIREMENTS PLAN
+=====================================================
+Based on Q4Text.txt - CSE 6332 Cloud Computing Quiz Requirements
+Last Updated: November 3, 2025
+
+COMPLETED REQUIREMENTS ✅
+==========================
+
+1. CLOUD DEPLOYMENT ✅
+   - Deployed application to GitHub Pages (cloud hosting)
+   - Application accessible via: https://benjination.github.io/TextReaderQuiz/
+   - All functionality implemented in browser with cloud storage backend
+   - Firebase integration for cloud data storage
+
+2. BASIC WEB APPLICATION STRUCTURE ✅
+   - Created responsive web interface with text input capabilities
+   - Multiple text input areas and file upload functionality
+   - Professional UI with gradient headers, responsive grid layouts
+   - Added personal branding (Ben's Face image, ID: 1002111609)
+
+3. TEXT PROCESSING FOUNDATION ✅
+   - File upload system for text files (.txt)
+   - Text content reading and processing
+   - Character and word counting functionality
+   - Text cleaning and normalization
+   - Firebase cloud storage for uploaded documents
+
+4. LANGUAGE ANALYSIS FEATURES ✅
+   - Language detection and identification
+   - Letter frequency analysis and distribution
+   - Word frequency analysis with top words display
+   - Character frequency calculations
+   - Foreign character detection
+
+5. SEARCH AND NAVIGATION ✅
+   - Advanced search functionality with keyword highlighting
+   - Search results with match counts and context previews
+   - Navigation between search occurrences (Next/Previous buttons)
+   - Auto-jump to first occurrence when viewing files
+   - Stemming and wildcard search support
+
+6. DATA MANAGEMENT ✅
+   - Cloud database integration (Firebase Firestore)
+   - File storage and retrieval system
+   - Sample files for testing (Alice.txt, CandideFr.txt, etc.)
+   - Stop words filtering capability
+   - Database clearing functionality
+
+REQUIREMENTS TO IMPLEMENT 🚧
+=============================
+
+Based on Q4Text.txt Quiz Requirements:
+
+10. CHARACTER ANALYSIS IN TEXT INPUT 🚧
+    NEEDED: Interactive text box functionality for real-time analysis
+    
+    (a) ❌ Count total number of each character in string S within text T
+        - Need: Input field for string S (1-10 ASCII characters)
+        - Need: Large text area T for user input
+        - Need: Real-time character counting display
+        - Need: Character frequency table
+    
+    (b) ❌ Calculate frequency of each character in S within text T
+        - Need: Percentage calculations for each character
+        - Need: Frequency display (both count and percentage)
+    
+    (c) ❌ Character replacement functionality
+        - Need: Input field for replacement character C
+        - Need: Replace all instances of S characters in T with C
+        - Need: Show before/after text comparison
+
+11. WORD ANALYSIS FUNCTIONALITY 🚧
+    NEEDED: Word-based text analysis with character filtering
+    
+    (a) ❌ Count all words in text T (space/punctuation separated)
+        - Need: Word counting algorithm
+        - Need: Proper punctuation handling
+        - Need: Display total word count
+    
+    (b) ❌ List words beginning with characters from string S
+        - Need: Word filtering by starting character
+        - Need: Group words by starting character
+        - Need: Display format: "Character: word1, word2, word3..."
+
+12. STOP WORDS PROCESSING 🚧
+    NEEDED: Advanced text filtering with stop words
+    
+    (a) ❌ Remove stop words P from text T
+        - Need: Input for up to 10 stop words
+        - Need: Stop word removal algorithm
+        - Need: Count and display removed words
+        - Need: Show resulting filtered text
+    
+    BONUS (b) ❌ Bi-gram analysis for remaining words
+        - Need: Identify words starting with S characters
+        - Need: Find preceding and following words
+        - Need: Display bi-gram pairs
+        - Example: S="AB", Text="Big red apple here" → "red apple", "apple here"
+
+13. LIVE DEMONSTRATION ✅ (Partially Complete)
+    - Application is live and accessible
+    - Need to implement parts 10, 11, 12 for full demo
+
+IMPLEMENTATION PRIORITY 📋
+==========================
+
+HIGH PRIORITY (Core Quiz Requirements):
+1. Add real-time text analysis interface (Question 10)
+2. Implement character counting and frequency calculation
+3. Add character replacement functionality
+4. Create word analysis with character filtering (Question 11)
+5. Implement stop words removal system (Question 12)
+
+MEDIUM PRIORITY (Enhancement):
+1. Bi-gram analysis (Question 12 bonus)
+2. Improved UI for quiz-specific functionality
+3. Real-time updates as user types
+
+TECHNICAL IMPLEMENTATION NOTES 📝
+==================================
+
+ARCHITECTURE:
+- Keep existing Firebase cloud storage
+- Add new interactive components to index.html
+- Extend app.js with quiz-specific functions
+- Maintain responsive design principles
+
+NEW COMPONENTS NEEDED:
+1. Interactive text analysis section
+2. String S input field (1-10 characters)
+3. Large text area T for user input
+4. Character C input for replacement
+5. Stop words P input (up to 10 words)
+6. Real-time analysis display panels
+7. Before/after comparison views
+
+INTEGRATION:
+- Build on existing text processing functions
+- Leverage current character/word frequency code
+- Extend search functionality for stop word filtering
+- Maintain cloud storage capabilities
+
+TESTING STRATEGY:
+- Use provided sample files for testing
+- Test with various character sets and lengths
+- Validate stop word removal accuracy
+- Test bi-gram generation algorithms
+
+SUBMISSION REQUIREMENTS:
+- Code snippets for each implemented feature (2-8 lines per feature)
+- Live demonstration link
+- Complete quiz file with pasted code sections
