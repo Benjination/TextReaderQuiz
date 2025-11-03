@@ -10,13 +10,13 @@ console.log('TextReader app.js loaded successfully');
 // Using Firebase v8 compat SDK (easier for this project)
 
 const firebaseConfig = {
-  apiKey: "AIzaSyClo5xAooY-URlku9ojjBv7fHzFXpGECiQ",
-  authDomain: "text-reader-d81fb.firebaseapp.com",
-  projectId: "text-reader-d81fb",
-  storageBucket: "text-reader-d81fb.firebasestorage.app",
-  messagingSenderId: "915986817081",
-  appId: "1:915986817081:web:c685ea869cc43fa4806de8",
-  measurementId: "G-XHYW6TF33R"
+  apiKey: "AIzaSyBfJjAOH7IxXB4NIh96JLlgBVdnGQxNY2k",
+  authDomain: "textreaderquiz.firebaseapp.com",
+  projectId: "textreaderquiz",
+  storageBucket: "textreaderquiz.firebasestorage.app",
+  messagingSenderId: "560249400821",
+  appId: "1:560249400821:web:1c2ea3465fbbfd7002c4bc",
+  measurementId: "G-MEEQN811RP"
 };
 
 // Initialize Firebase (will work when Firebase scripts are loaded)
