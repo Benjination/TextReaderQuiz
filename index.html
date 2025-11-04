@@ -404,6 +404,32 @@
             <h3>⚡ Interactive Text Analysis</h3>
             <p>Real-time character and frequency analysis as you type:</p>
             
+            <!-- Text Source Selector -->
+            <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6;">
+                <label style="font-weight: bold; color: #495057; margin-bottom: 10px; display: block;">📄 Text Source:</label>
+                <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                    <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                        <input type="radio" name="textSource" value="manual" checked onchange="handleTextSourceChange()">
+                        <span>✏️ Manual Input</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                        <input type="radio" name="textSource" value="file" onchange="handleTextSourceChange()">
+                        <span>📁 From File</span>
+                    </label>
+                </div>
+                
+                <!-- File Selection (initially hidden) -->
+                <div id="fileSourceSelection" style="display: none; margin-top: 15px;">
+                    <label for="sourceFileSelect" style="font-weight: bold; color: #495057; margin-bottom: 8px; display: block;">Select File:</label>
+                    <select id="sourceFileSelect" onchange="loadTextFromFile()" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; background: white;">
+                        <option value="">-- Choose a file --</option>
+                    </select>
+                    <div id="fileSourceInfo" style="margin-top: 10px; padding: 8px; background: #fff3cd; border-radius: 4px; font-size: 0.9em; display: none;">
+                        <strong>Note:</strong> <span id="fileSourceDetails"></span>
+                    </div>
+                </div>
+            </div>
+            
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
                 <div>
                     <label for="stringS" style="font-weight: bold; color: #007bff;">String S (1-10 characters to analyze):</label>
@@ -441,8 +467,9 @@
                 ></textarea>
             </div>
             
-            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+            <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
                 <button onclick="performCharacterReplacement()" class="btn" style="background-color: #dc3545;">🔄 Replace Characters</button>
+                <button id="saveChangesBtn" onclick="saveChangesToFile()" class="btn" style="background-color: #28a745; display: none;">💾 Save Changes</button>
                 <button onclick="clearInteractiveAnalysis()" class="btn" style="background-color: #6c757d;">🗑️ Clear All</button>
             </div>
             

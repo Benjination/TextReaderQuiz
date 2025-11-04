@@ -3183,9 +3183,17 @@ function updateCharacterAnalysis(text, stringS) {
  * Clear analysis display when inputs are empty
  */
 function clearAnalysisDisplay() {
-    document.getElementById('characterCounts').innerHTML = '<p style="color: #6c757d; font-style: italic;">Enter text to see character counts...</p>';
-    document.getElementById('characterFrequencies').innerHTML = '<p style="color: #6c757d; font-style: italic;">Enter text to see character frequencies...</p>';
-    document.getElementById('wordCounts').innerHTML = '<p style="color: #6c757d; font-style: italic;">Enter text to see word counts...</p>';
+    // Only clear elements that exist in the Interactive Text Analysis section
+    const characterCounts = document.getElementById('characterCounts');
+    const characterFrequencies = document.getElementById('characterFrequencies');
+    
+    if (characterCounts) {
+        characterCounts.innerHTML = '<p style="color: #6c757d; font-style: italic;">Enter text to see character counts...</p>';
+    }
+    
+    if (characterFrequencies) {
+        characterFrequencies.innerHTML = '<p style="color: #6c757d; font-style: italic;">Enter text to see character frequencies...</p>';
+    }
 }
 
 // =====================================
@@ -3197,7 +3205,8 @@ function clearAnalysisDisplay() {
  */
 function updateWordAnalysis(text) {
     if (!text.trim()) {
-        document.getElementById('wordCounts').innerHTML = '<p style="color: #6c757d; font-style: italic;">Enter text to see word counts...</p>';
+        // No word counts element in Interactive Text Analysis section
+        // This function is for compatibility but doesn't display anything
         return;
     }
     
@@ -3525,6 +3534,314 @@ function showReplacementPreview(original, replaced) {
 }
 
 // =====================================
+// TEXT SOURCE MANAGEMENT (Enhanced Interactive Analysis)
+// =====================================
+
+// Global variables to track current file context
+let currentFileContext = {
+    source: 'manual',      // 'manual', 'sample', 'user'
+    fileId: null,          // Firebase document ID for user files
+    fileName: null,        // Original filename
+    isModified: false,     // Track if text has been modified
+    originalContent: null  // Store original content for comparison
+};
+
+/**
+ * Handle text source change (manual vs file)
+ */
+function handleTextSourceChange() {
+    const selectedSource = document.querySelector('input[name="textSource"]:checked').value;
+    const fileSelection = document.getElementById('fileSourceSelection');
+    const textAreaT = document.getElementById('textAreaT');
+    const saveBtn = document.getElementById('saveChangesBtn');
+    
+    if (selectedSource === 'file') {
+        fileSelection.style.display = 'block';
+        loadAvailableFiles();
+        textAreaT.placeholder = 'Select a file above to load its content...';
+    } else {
+        fileSelection.style.display = 'none';
+        textAreaT.placeholder = 'Start typing your text here and watch the analysis update in real-time...';
+        textAreaT.readOnly = false;
+        saveBtn.style.display = 'none';
+        resetFileContext();
+    }
+    
+    // Clear current content when switching sources
+    textAreaT.value = '';
+    analyzeTextReal();
+}
+
+/**
+ * Load available files into the selection dropdown
+ */
+async function loadAvailableFiles() {
+    const select = document.getElementById('sourceFileSelect');
+    
+    try {
+        // Clear existing options except the first one
+        select.innerHTML = '<option value="">-- Choose a file --</option>';
+        
+        // Add sample files
+        const sampleFiles = [
+            { name: 'Alice.txt', displayName: 'Alice in Wonderland (Sample)', type: 'sample' },
+            { name: 'CandideFr.txt', displayName: 'Candide French (Sample)', type: 'sample' },
+            { name: 'CandidateSp.txt', displayName: 'Candidato Spanish (Sample)', type: 'sample' },
+            { name: 'assign.txt', displayName: 'Assignment Text (Sample)', type: 'sample' },
+            { name: 'StopWords.txt', displayName: 'Stop Words (Sample)', type: 'sample' }
+        ];
+        
+        // Add sample files section
+        const sampleGroup = document.createElement('optgroup');
+        sampleGroup.label = '📚 Sample Files (Read-Only)';
+        sampleFiles.forEach(file => {
+            const option = document.createElement('option');
+            option.value = `sample:${file.name}`;
+            option.textContent = file.displayName;
+            sampleGroup.appendChild(option);
+        });
+        select.appendChild(sampleGroup);
+        
+        // Load user files from database
+        const userFiles = await getUserFiles();
+        if (userFiles.length > 0) {
+            const userGroup = document.createElement('optgroup');
+            userGroup.label = '👤 Your Files (Editable)';
+            userFiles.forEach(file => {
+                const option = document.createElement('option');
+                option.value = `user:${file.id}`;
+                option.textContent = file.name;
+                userGroup.appendChild(option);
+            });
+            select.appendChild(userGroup);
+        }
+        
+    } catch (error) {
+        console.error('Error loading files:', error);
+        showError('Failed to load file list');
+    }
+}
+
+/**
+ * Get user files from Firebase
+ */
+async function getUserFiles() {
+    try {
+        const snapshot = await db.collection('documents').get();
+        return snapshot.docs.map(doc => ({
+            id: doc.id,
+            name: doc.data().name,
+            ...doc.data()
+        }));
+    } catch (error) {
+        console.error('Error fetching user files:', error);
+        return [];
+    }
+}
+
+/**
+ * Load text content from selected file
+ */
+async function loadTextFromFile() {
+    const select = document.getElementById('sourceFileSelect');
+    const selectedValue = select.value;
+    const textAreaT = document.getElementById('textAreaT');
+    const fileInfo = document.getElementById('fileSourceInfo');
+    const fileDetails = document.getElementById('fileSourceDetails');
+    const saveBtn = document.getElementById('saveChangesBtn');
+    
+    if (!selectedValue) {
+        textAreaT.value = '';
+        fileInfo.style.display = 'none';
+        saveBtn.style.display = 'none';
+        resetFileContext();
+        analyzeTextReal();
+        return;
+    }
+    
+    try {
+        showProgress(true);
+        
+        const [sourceType, fileIdentifier] = selectedValue.split(':');
+        let content = '';
+        
+        if (sourceType === 'sample') {
+            // Load sample file
+            const response = await fetch(fileIdentifier);
+            if (!response.ok) throw new Error(`Failed to load sample file: ${response.statusText}`);
+            content = await response.text();
+            
+            // Update context for sample file
+            currentFileContext = {
+                source: 'sample',
+                fileId: null,
+                fileName: fileIdentifier,
+                isModified: false,
+                originalContent: content
+            };
+            
+            textAreaT.readOnly = false; // Allow editing for analysis
+            saveBtn.style.display = 'none'; // No saving for samples
+            fileDetails.textContent = 'Sample file loaded (read-only - changes cannot be saved)';
+            fileInfo.style.display = 'block';
+            
+        } else if (sourceType === 'user') {
+            // Load user file from Firebase
+            const doc = await db.collection('documents').doc(fileIdentifier).get();
+            if (!doc.exists) throw new Error('File not found in database');
+            
+            const fileData = doc.data();
+            
+            // Get content from the correct field (originalContent)
+            content = fileData.originalContent || fileData.content || '';
+            
+            if (!content) {
+                throw new Error('File content is empty or missing');
+            }
+            
+            // Update context for user file
+            currentFileContext = {
+                source: 'user',
+                fileId: fileIdentifier,
+                fileName: fileData.name,
+                isModified: false,
+                originalContent: content
+            };
+            
+            textAreaT.readOnly = false; // Allow editing
+            saveBtn.style.display = 'none'; // Show only when modified
+            fileDetails.textContent = 'User file loaded - you can edit and save changes back to the database';
+            fileInfo.style.display = 'block';
+        }
+        
+        // Load content into text area
+        textAreaT.value = content;
+        
+        // Set up modification tracking
+        textAreaT.oninput = function() {
+            analyzeTextReal();
+            trackTextModification();
+        };
+        
+        showProgress(false);
+        analyzeTextReal(); // Run analysis on loaded content
+        
+    } catch (error) {
+        console.error('Error loading file:', error);
+        showError(`Failed to load file: ${error.message}`);
+        showProgress(false);
+        resetFileContext();
+    }
+}
+
+/**
+ * Track text modifications for user files
+ */
+function trackTextModification() {
+    if (currentFileContext.source === 'user') {
+        const currentContent = document.getElementById('textAreaT').value;
+        const isModified = currentContent !== currentFileContext.originalContent;
+        
+        if (isModified !== currentFileContext.isModified) {
+            currentFileContext.isModified = isModified;
+            const saveBtn = document.getElementById('saveChangesBtn');
+            const fileDetails = document.getElementById('fileSourceDetails');
+            
+            if (isModified) {
+                saveBtn.style.display = 'inline-block';
+                fileDetails.textContent = 'File has been modified - click "Save Changes" to update the database';
+                fileDetails.parentElement.style.background = '#fff3cd'; // Yellow warning
+            } else {
+                saveBtn.style.display = 'none';
+                fileDetails.textContent = 'User file loaded - you can edit and save changes back to the database';
+                fileDetails.parentElement.style.background = '#d1ecf1'; // Blue info
+            }
+        }
+    }
+}
+
+/**
+ * Save changes to user file in database
+ */
+async function saveChangesToFile() {
+    if (currentFileContext.source !== 'user' || !currentFileContext.fileId) {
+        showError('No user file is currently loaded for saving');
+        return;
+    }
+    
+    if (!currentFileContext.isModified) {
+        showError('No changes detected to save');
+        return;
+    }
+    
+    // Confirmation dialog
+    const confirmed = confirm(`Are you sure you want to save changes to "${currentFileContext.fileName}"?\n\nThis will permanently update the file in your database.`);
+    if (!confirmed) return;
+    
+    try {
+        showProgress(true);
+        
+        const newContent = document.getElementById('textAreaT').value;
+        
+        // Reprocess the document with new content
+        const updatedDoc = await processDocument(currentFileContext.fileName, newContent);
+        
+        // Update in Firebase
+        await db.collection('documents').doc(currentFileContext.fileId).update({
+            originalContent: newContent,
+            cleanedText: updatedDoc.cleanedText,
+            wordCount: updatedDoc.wordCount,
+            language: updatedDoc.language,
+            lastModified: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        // Update search index
+        await updateSearchIndex({
+            id: currentFileContext.fileId,
+            name: currentFileContext.fileName,
+            originalContent: newContent,
+            ...updatedDoc
+        });
+        
+        // Update context
+        currentFileContext.originalContent = newContent;
+        currentFileContext.isModified = false;
+        
+        // Update UI
+        const saveBtn = document.getElementById('saveChangesBtn');
+        const fileDetails = document.getElementById('fileSourceDetails');
+        saveBtn.style.display = 'none';
+        fileDetails.textContent = 'Changes saved successfully to database';
+        fileDetails.parentElement.style.background = '#d4edda'; // Green success
+        
+        showProgress(false);
+        showSuccess(`Successfully saved changes to "${currentFileContext.fileName}"`);
+        
+    } catch (error) {
+        console.error('Error saving file:', error);
+        showError(`Failed to save changes: ${error.message}`);
+        showProgress(false);
+    }
+}
+
+/**
+ * Reset file context to manual mode
+ */
+function resetFileContext() {
+    currentFileContext = {
+        source: 'manual',
+        fileId: null,
+        fileName: null,
+        isModified: false,
+        originalContent: null
+    };
+    
+    // Reset text area input handler to just analysis
+    const textAreaT = document.getElementById('textAreaT');
+    textAreaT.oninput = analyzeTextReal;
+}
+
+// =====================================
 // STOP WORDS PROCESSING (Question 12)
 // =====================================
 
@@ -3642,6 +3959,17 @@ function clearInteractiveAnalysis() {
     document.getElementById('wordSearchDropdown').style.display = 'none';
     document.getElementById('stopWordsResults').style.display = 'none';
     
+    // Reset text source to manual input
+    document.querySelector('input[name="textSource"][value="manual"]').checked = true;
+    document.getElementById('fileSourceSelection').style.display = 'none';
+    document.getElementById('fileSourceInfo').style.display = 'none';
+    document.getElementById('saveChangesBtn').style.display = 'none';
+    document.getElementById('textAreaT').placeholder = 'Start typing your text here and watch the analysis update in real-time...';
+    document.getElementById('textAreaT').readOnly = false;
+    
+    // Reset file context
+    resetFileContext();
+    
     // Reset displays
     document.getElementById('totalChars').textContent = '0';
     document.getElementById('totalWords').textContent = '0';
@@ -3677,6 +4005,9 @@ window.highlightWordSuggestion = highlightWordSuggestion;
 window.selectWordFromDropdown = selectWordFromDropdown;
 window.removeStopWords = removeStopWords;
 window.clearStopWordsResults = clearStopWordsResults;
+window.handleTextSourceChange = handleTextSourceChange;
+window.loadTextFromFile = loadTextFromFile;
+window.saveChangesToFile = saveChangesToFile;
 window.clearInteractiveAnalysis = clearInteractiveAnalysis;
 
 console.log('Global functions assigned:', {
@@ -3703,6 +4034,9 @@ console.log('Global functions assigned:', {
     selectWordFromDropdown: typeof window.selectWordFromDropdown,
     removeStopWords: typeof window.removeStopWords,
     clearStopWordsResults: typeof window.clearStopWordsResults,
+    handleTextSourceChange: typeof window.handleTextSourceChange,
+    loadTextFromFile: typeof window.loadTextFromFile,
+    saveChangesToFile: typeof window.saveChangesToFile,
     clearInteractiveAnalysis: typeof window.clearInteractiveAnalysis
 });
 
