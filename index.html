@@ -489,6 +489,124 @@
                 </div>
             </div>
             
+            <!-- Word Replacement Section (Question 11) -->
+            <div id="wordReplacementSection" style="margin-top: 20px;">
+                <h4 style="color: #6f42c1;">📝 Word Replacement</h4>
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #6f42c1;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 15px; align-items: end; margin-bottom: 15px;">
+                        <div style="position: relative;">
+                            <label for="wordToReplace" style="font-weight: bold; color: #6f42c1;">Word to Search:</label>
+                            <input 
+                                type="text" 
+                                id="wordToReplace" 
+                                placeholder="Start typing to search words..."
+                                style="width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px;"
+                                oninput="searchWordsAutoComplete()"
+                                onkeydown="handleWordSearchKeydown(event)"
+                                autocomplete="off"
+                            >
+                            <!-- Auto-complete dropdown -->
+                            <div id="wordSearchDropdown" style="
+                                position: absolute; 
+                                top: 100%; 
+                                left: 0; 
+                                right: 0; 
+                                background: white; 
+                                border: 1px solid #ccc; 
+                                border-top: none; 
+                                border-radius: 0 0 4px 4px; 
+                                max-height: 200px; 
+                                overflow-y: auto; 
+                                z-index: 1000; 
+                                display: none;
+                                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                            "></div>
+                        </div>
+                        
+                        <div>
+                            <label for="replacementWord" style="font-weight: bold; color: #6f42c1;">Replacement Word:</label>
+                            <input 
+                                type="text" 
+                                id="replacementWord" 
+                                placeholder="Enter replacement word..."
+                                style="width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px;"
+                            >
+                        </div>
+                        
+                        <div>
+                            <button onclick="performWordReplacement()" class="btn" style="background-color: #6f42c1;">🔄 Replace Word</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Word Count Result -->
+                    <div id="wordCountResult" style="display: none; margin-top: 15px; padding: 10px; background: #e7f3ff; border-radius: 4px; border-left: 4px solid #17a2b8;">
+                        <p style="margin: 0; color: #17a2b8; font-weight: bold;" id="wordCountDisplay"></p>
+                    </div>
+                    
+                    <!-- Word Replacement Preview -->
+                    <div id="wordReplacementPreview" style="display: none;">
+                        <p><strong>Word Replacement Result:</strong></p>
+                        <div style="background: white; padding: 10px; border-radius: 4px; font-family: monospace; max-height: 200px; overflow-y: auto;">
+                            <div id="wordReplacedText"></div>
+                        </div>
+                        <div style="margin-top: 10px; color: #6c757d;">
+                            <small id="wordReplacementStats"></small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Stop Words Processing Section (Question 12) -->
+            <div id="stopWordsSection" style="margin-top: 20px;">
+                <h4 style="color: #dc3545;">🛑 Stop Words Removal (Question 12)</h4>
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #dc3545;">
+                    <div style="margin-bottom: 15px;">
+                        <label for="stopWordsP" style="font-weight: bold; color: #dc3545;">Stop Words P (up to 10 words, comma-separated):</label>
+                        <input 
+                            type="text" 
+                            id="stopWordsP" 
+                            placeholder="Enter up to 10 stop words separated by commas (e.g., the, and, a, is, to)"
+                            style="width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px;"
+                        >
+                        <small style="color: #6c757d;">Example: the, and, a, is, to, of, in, that, have, it</small>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <button onclick="removeStopWords()" class="btn" style="background-color: #dc3545;">🗑️ Remove Stop Words</button>
+                        <button onclick="clearStopWordsResults()" class="btn" style="background-color: #6c757d; margin-left: 10px;">🔄 Reset</button>
+                    </div>
+                    
+                    <!-- Stop Words Removal Results -->
+                    <div id="stopWordsResults" style="display: none;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                            <div style="background: #fff3cd; padding: 10px; border-radius: 4px; border-left: 4px solid #ffc107;">
+                                <h6 style="margin: 0 0 5px 0; color: #856404;">📊 Removal Statistics:</h6>
+                                <div id="stopWordsStats"></div>
+                            </div>
+                            
+                            <div style="background: #d1ecf1; padding: 10px; border-radius: 4px; border-left: 4px solid #17a2b8;">
+                                <h6 style="margin: 0 0 5px 0; color: #0c5460;">🔍 Words Removed:</h6>
+                                <div id="removedWordsList"></div>
+                            </div>
+                        </div>
+                        
+                        <div style="background: white; padding: 15px; border-radius: 4px; border: 1px solid #dee2e6;">
+                            <h6 style="margin: 0 0 10px 0; color: #dc3545;">📝 Text After Stop Words Removal:</h6>
+                            <div id="filteredText" style="
+                                background: #f8f9fa; 
+                                padding: 12px; 
+                                border-radius: 4px; 
+                                max-height: 300px; 
+                                overflow-y: auto; 
+                                font-family: 'Georgia', serif; 
+                                line-height: 1.6;
+                                white-space: pre-wrap;
+                            "></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
         </div>
 
         <div id="fileListSection" style="margin-top: 30px; padding: 20px; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">

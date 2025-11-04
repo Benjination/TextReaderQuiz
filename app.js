@@ -3185,6 +3185,297 @@ function updateCharacterAnalysis(text, stringS) {
 function clearAnalysisDisplay() {
     document.getElementById('characterCounts').innerHTML = '<p style="color: #6c757d; font-style: italic;">Enter text to see character counts...</p>';
     document.getElementById('characterFrequencies').innerHTML = '<p style="color: #6c757d; font-style: italic;">Enter text to see character frequencies...</p>';
+    document.getElementById('wordCounts').innerHTML = '<p style="color: #6c757d; font-style: italic;">Enter text to see word counts...</p>';
+}
+
+// =====================================
+// WORD ANALYSIS FUNCTIONALITY (Question 11)
+// =====================================
+
+/**
+ * Update word analysis display
+ */
+function updateWordAnalysis(text) {
+    if (!text.trim()) {
+        document.getElementById('wordCounts').innerHTML = '<p style="color: #6c757d; font-style: italic;">Enter text to see word counts...</p>';
+        return;
+    }
+    
+    // Split text into words (separated by spaces and punctuation)
+    const words = text.toLowerCase()
+        .replace(/[^\w\s]/g, ' ') // Replace punctuation with spaces
+        .split(/\s+/) // Split by whitespace
+        .filter(word => word.length > 0); // Remove empty strings
+    
+    // Count word frequencies
+    const wordCounts = {};
+    words.forEach(word => {
+        wordCounts[word] = (wordCounts[word] || 0) + 1;
+    });
+    
+    // Sort words by frequency (descending) then alphabetically
+    const sortedWords = Object.entries(wordCounts)
+        .sort(([a, countA], [b, countB]) => {
+            if (countB !== countA) return countB - countA; // Sort by count descending
+            return a.localeCompare(b); // Then alphabetically
+        });
+    
+    // Show all words by frequency
+    let wordsHtml = '<div><h5 style="margin: 0 0 10px 0; color: #6f42c1;">📊 All Words (by frequency):</h5>';
+    
+    // Show top 15 most frequent words
+    const topWords = sortedWords.slice(0, 15);
+    wordsHtml += topWords.map(([word, count]) => 
+        `<p style="margin: 2px 0;"><strong>${word}:</strong> ${count} occurrence${count !== 1 ? 's' : ''}</p>`
+    ).join('');
+    
+    if (sortedWords.length > 15) {
+        wordsHtml += `<p style="color: #6c757d; font-style: italic; margin-top: 10px;">... and ${sortedWords.length - 15} more words</p>`;
+    }
+    
+    wordsHtml += '</div>';
+    
+    document.getElementById('wordCounts').innerHTML = wordsHtml;
+}
+
+/**
+ * Perform word replacement operation (Question 11 extension)
+ */
+function performWordReplacement() {
+    const wordToReplace = document.getElementById('wordToReplace').value.trim();
+    const replacementWord = document.getElementById('replacementWord').value.trim();
+    const textT = document.getElementById('textAreaT').value;
+    
+    if (!wordToReplace) {
+        alert('Please enter a word to replace');
+        return;
+    }
+    
+    if (!replacementWord) {
+        alert('Please enter a replacement word');
+        return;
+    }
+    
+    if (!textT) {
+        alert('Please enter some text in Text Area T');
+        return;
+    }
+    
+    // Perform case-insensitive word replacement (whole words only)
+    const regex = new RegExp(`\\b${wordToReplace.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
+    const replacedText = textT.replace(regex, replacementWord);
+    
+    // Count replacements
+    const matches = textT.match(regex) || [];
+    const replacementCount = matches.length;
+    
+    // Show replacement result
+    showWordReplacementPreview(replacedText, wordToReplace, replacementWord, replacementCount);
+}
+
+/**
+ * Show word replacement preview
+ */
+function showWordReplacementPreview(replacedText, originalWord, newWord, count) {
+    document.getElementById('wordReplacedText').textContent = replacedText;
+    document.getElementById('wordReplacementStats').textContent = 
+        `Replaced ${count} occurrence${count !== 1 ? 's' : ''} of "${originalWord}" with "${newWord}"`;
+    document.getElementById('wordReplacementPreview').style.display = 'block';
+    
+    // Scroll to the preview
+    document.getElementById('wordReplacementPreview').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// =====================================
+// WORD AUTOCOMPLETE FUNCTIONALITY
+// =====================================
+
+let currentWordsList = []; // Cache of all words from the text
+let selectedSuggestionIndex = -1; // For keyboard navigation
+
+/**
+ * Auto-complete word search as user types
+ */
+function searchWordsAutoComplete() {
+    const input = document.getElementById('wordToReplace');
+    const searchTerm = input.value.trim().toLowerCase();
+    const textT = document.getElementById('textAreaT').value;
+    const dropdown = document.getElementById('wordSearchDropdown');
+    
+    // Hide word count result when typing
+    document.getElementById('wordCountResult').style.display = 'none';
+    
+    if (!searchTerm || !textT) {
+        dropdown.style.display = 'none';
+        return;
+    }
+    
+    // Extract all unique words from the text
+    const words = textT.toLowerCase()
+        .replace(/[^\w\s]/g, ' ') // Replace punctuation with spaces
+        .split(/\s+/) // Split by whitespace
+        .filter(word => word.length > 0); // Remove empty strings
+    
+    // Get unique words and their counts
+    const wordCounts = {};
+    words.forEach(word => {
+        wordCounts[word] = (wordCounts[word] || 0) + 1;
+    });
+    
+    // Filter words that start with the search term
+    const matchingWords = Object.entries(wordCounts)
+        .filter(([word]) => word.startsWith(searchTerm))
+        .sort(([a, countA], [b, countB]) => {
+            // Sort by frequency (descending) then alphabetically
+            if (countB !== countA) return countB - countA;
+            return a.localeCompare(b);
+        })
+        .slice(0, 10); // Limit to top 10 matches
+    
+    currentWordsList = matchingWords;
+    selectedSuggestionIndex = -1;
+    
+    if (matchingWords.length === 0) {
+        dropdown.style.display = 'none';
+        return;
+    }
+    
+    // Build dropdown HTML
+    const dropdownHTML = matchingWords.map(([word, count], index) => `
+        <div 
+            class="word-suggestion" 
+            data-index="${index}"
+            style="
+                padding: 8px 12px; 
+                cursor: pointer; 
+                border-bottom: 1px solid #eee;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            "
+            onmouseover="highlightWordSuggestion(${index})"
+            onclick="selectWordFromDropdown('${word}', ${count})"
+        >
+            <span style="font-weight: 500;">${word}</span>
+            <span style="color: #6c757d; font-size: 0.9em;">${count} occurrence${count !== 1 ? 's' : ''}</span>
+        </div>
+    `).join('');
+    
+    dropdown.innerHTML = dropdownHTML;
+    dropdown.style.display = 'block';
+}
+
+/**
+ * Handle keyboard navigation in word search
+ */
+function handleWordSearchKeydown(event) {
+    const dropdown = document.getElementById('wordSearchDropdown');
+    
+    if (dropdown.style.display === 'none' || currentWordsList.length === 0) {
+        return;
+    }
+    
+    switch (event.key) {
+        case 'ArrowDown':
+            event.preventDefault();
+            selectedSuggestionIndex = Math.min(selectedSuggestionIndex + 1, currentWordsList.length - 1);
+            updateSuggestionHighlight();
+            break;
+            
+        case 'ArrowUp':
+            event.preventDefault();
+            selectedSuggestionIndex = Math.max(selectedSuggestionIndex - 1, -1);
+            updateSuggestionHighlight();
+            break;
+            
+        case 'Enter':
+            event.preventDefault();
+            if (selectedSuggestionIndex >= 0) {
+                const [word, count] = currentWordsList[selectedSuggestionIndex];
+                selectWordFromDropdown(word, count);
+            }
+            break;
+            
+        case 'Escape':
+            dropdown.style.display = 'none';
+            selectedSuggestionIndex = -1;
+            break;
+    }
+}
+
+/**
+ * Highlight word suggestion on hover
+ */
+function highlightWordSuggestion(index) {
+    selectedSuggestionIndex = index;
+    updateSuggestionHighlight();
+}
+
+/**
+ * Update visual highlighting of selected suggestion
+ */
+function updateSuggestionHighlight() {
+    const suggestions = document.querySelectorAll('.word-suggestion');
+    suggestions.forEach((suggestion, index) => {
+        if (index === selectedSuggestionIndex) {
+            suggestion.style.backgroundColor = '#e7f3ff';
+            suggestion.style.color = '#007bff';
+        } else {
+            suggestion.style.backgroundColor = 'white';
+            suggestion.style.color = 'black';
+        }
+    });
+}
+
+/**
+ * Select word from dropdown and show count
+ */
+function selectWordFromDropdown(word, count) {
+    const input = document.getElementById('wordToReplace');
+    const dropdown = document.getElementById('wordSearchDropdown');
+    
+    // Set the input value
+    input.value = word;
+    
+    // Hide dropdown
+    dropdown.style.display = 'none';
+    selectedSuggestionIndex = -1;
+    
+    // Show word count result automatically
+    const resultText = `The word "${word}" appears ${count} time${count !== 1 ? 's' : ''} in the text.`;
+    document.getElementById('wordCountDisplay').textContent = resultText;
+    document.getElementById('wordCountResult').style.display = 'block';
+}
+
+/**
+ * Count occurrences of a specific word in the text
+ */
+function countWordOccurrences() {
+    const wordToCount = document.getElementById('wordToReplace').value.trim();
+    const textT = document.getElementById('textAreaT').value;
+    
+    if (!wordToCount) {
+        alert('Please enter a word to count in the "Word to Replace" field');
+        return;
+    }
+    
+    if (!textT) {
+        alert('Please enter some text in Text Area T');
+        return;
+    }
+    
+    // Count occurrences (case-insensitive, whole words only)
+    const regex = new RegExp(`\\b${wordToCount.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
+    const matches = textT.match(regex) || [];
+    const count = matches.length;
+    
+    // Display the result
+    const resultText = `The word "${wordToCount}" appears ${count} time${count !== 1 ? 's' : ''} in the text.`;
+    document.getElementById('wordCountDisplay').textContent = resultText;
+    document.getElementById('wordCountResult').style.display = 'block';
+    
+    // Scroll to the result
+    document.getElementById('wordCountResult').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 /**
@@ -3233,6 +3524,108 @@ function showReplacementPreview(original, replaced) {
     document.getElementById('replacementPreview').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
+// =====================================
+// STOP WORDS PROCESSING (Question 12)
+// =====================================
+
+/**
+ * Remove stop words from the text
+ */
+function removeStopWords() {
+    const stopWordsInput = document.getElementById('stopWordsP').value.trim();
+    const textT = document.getElementById('textAreaT').value;
+    
+    if (!stopWordsInput) {
+        alert('Please enter stop words in the P field (comma-separated)');
+        return;
+    }
+    
+    if (!textT) {
+        alert('Please enter some text in Text Area T');
+        return;
+    }
+    
+    // Parse stop words (comma-separated, max 10)
+    const stopWords = stopWordsInput
+        .split(',')
+        .map(word => word.trim().toLowerCase())
+        .filter(word => word.length > 0)
+        .slice(0, 10); // Limit to 10 words
+    
+    if (stopWords.length === 0) {
+        alert('Please enter valid stop words separated by commas');
+        return;
+    }
+    
+    // Split text into words
+    const words = textT.split(/\s+/);
+    const originalWordCount = words.length;
+    
+    // Track removed words and their counts
+    const removedWords = {};
+    let totalRemoved = 0;
+    
+    // Filter out stop words (case-insensitive)
+    const filteredWords = words.filter(word => {
+        const cleanWord = word.toLowerCase().replace(/[^\w]/g, ''); // Remove punctuation for comparison
+        
+        if (stopWords.includes(cleanWord)) {
+            // Track this removal
+            const originalWord = cleanWord;
+            removedWords[originalWord] = (removedWords[originalWord] || 0) + 1;
+            totalRemoved++;
+            return false; // Remove this word
+        }
+        return true; // Keep this word
+    });
+    
+    // Create filtered text
+    const filteredText = filteredWords.join(' ');
+    const finalWordCount = filteredWords.length;
+    
+    // Display results
+    showStopWordsResults(stopWords, removedWords, totalRemoved, originalWordCount, finalWordCount, filteredText);
+}
+
+/**
+ * Display stop words removal results
+ */
+function showStopWordsResults(stopWords, removedWords, totalRemoved, originalCount, finalCount, filteredText) {
+    // Show statistics
+    const statsHtml = `
+        <p style="margin: 2px 0;"><strong>Original word count:</strong> ${originalCount}</p>
+        <p style="margin: 2px 0;"><strong>Words removed:</strong> ${totalRemoved}</p>
+        <p style="margin: 2px 0;"><strong>Final word count:</strong> ${finalCount}</p>
+        <p style="margin: 2px 0;"><strong>Percentage removed:</strong> ${((totalRemoved / originalCount) * 100).toFixed(1)}%</p>
+    `;
+    document.getElementById('stopWordsStats').innerHTML = statsHtml;
+    
+    // Show removed words list
+    const removedWordsList = Object.entries(removedWords)
+        .sort(([a, countA], [b, countB]) => countB - countA) // Sort by count descending
+        .map(([word, count]) => `<span style="background: #f8d7da; padding: 2px 6px; border-radius: 3px; margin: 2px; display: inline-block;">${word} (${count})</span>`)
+        .join('');
+    
+    document.getElementById('removedWordsList').innerHTML = removedWordsList || '<span style="color: #6c757d;">No stop words were found in the text</span>';
+    
+    // Show filtered text
+    document.getElementById('filteredText').textContent = filteredText;
+    
+    // Show results section
+    document.getElementById('stopWordsResults').style.display = 'block';
+    
+    // Scroll to results
+    document.getElementById('stopWordsResults').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/**
+ * Clear stop words results and reset
+ */
+function clearStopWordsResults() {
+    document.getElementById('stopWordsP').value = '';
+    document.getElementById('stopWordsResults').style.display = 'none';
+}
+
 /**
  * Clear all interactive analysis inputs and results
  */
@@ -3240,7 +3633,14 @@ function clearInteractiveAnalysis() {
     document.getElementById('stringS').value = '';
     document.getElementById('textAreaT').value = '';
     document.getElementById('replacementC').value = '';
+    document.getElementById('wordToReplace').value = '';
+    document.getElementById('replacementWord').value = '';
+    document.getElementById('stopWordsP').value = '';
     document.getElementById('replacementPreview').style.display = 'none';
+    document.getElementById('wordReplacementPreview').style.display = 'none';
+    document.getElementById('wordCountResult').style.display = 'none';
+    document.getElementById('wordSearchDropdown').style.display = 'none';
+    document.getElementById('stopWordsResults').style.display = 'none';
     
     // Reset displays
     document.getElementById('totalChars').textContent = '0';
@@ -3269,6 +3669,14 @@ window.jumpToNextOccurrence = jumpToNextOccurrence;
 window.jumpToPreviousOccurrence = jumpToPreviousOccurrence;
 window.analyzeTextReal = analyzeTextReal;
 window.performCharacterReplacement = performCharacterReplacement;
+window.performWordReplacement = performWordReplacement;
+window.countWordOccurrences = countWordOccurrences;
+window.searchWordsAutoComplete = searchWordsAutoComplete;
+window.handleWordSearchKeydown = handleWordSearchKeydown;
+window.highlightWordSuggestion = highlightWordSuggestion;
+window.selectWordFromDropdown = selectWordFromDropdown;
+window.removeStopWords = removeStopWords;
+window.clearStopWordsResults = clearStopWordsResults;
 window.clearInteractiveAnalysis = clearInteractiveAnalysis;
 
 console.log('Global functions assigned:', {
@@ -3287,6 +3695,14 @@ console.log('Global functions assigned:', {
     jumpToPreviousOccurrence: typeof window.jumpToPreviousOccurrence,
     analyzeTextReal: typeof window.analyzeTextReal,
     performCharacterReplacement: typeof window.performCharacterReplacement,
+    performWordReplacement: typeof window.performWordReplacement,
+    countWordOccurrences: typeof window.countWordOccurrences,
+    searchWordsAutoComplete: typeof window.searchWordsAutoComplete,
+    handleWordSearchKeydown: typeof window.handleWordSearchKeydown,
+    highlightWordSuggestion: typeof window.highlightWordSuggestion,
+    selectWordFromDropdown: typeof window.selectWordFromDropdown,
+    removeStopWords: typeof window.removeStopWords,
+    clearStopWordsResults: typeof window.clearStopWordsResults,
     clearInteractiveAnalysis: typeof window.clearInteractiveAnalysis
 });
 
